@@ -1,0 +1,92 @@
+[
+    {
+        "id": "rome",
+        "name": "Roma",
+        "nation_code": "ITA",
+        "type": "capital",
+        "coords": [
+            740,
+            240
+        ]
+    },
+    {
+        "id": "milan",
+        "name": "Milano",
+        "nation_code": "ITA",
+        "type": "major_city",
+        "coords": [
+            710,
+            160
+        ]
+    },
+    {
+        "id": "berlin",
+        "name": "Berlin",
+        "nation_code": "GER",
+        "type": "capital",
+        "coords": [
+            750,
+            120
+        ]
+    },
+    {
+        "id": "paris",
+        "name": "Paris",
+        "nation_code": "FRA",
+        "type": "capital",
+        "coords": [
+            660,
+            150
+        ]
+    },
+    {
+        "id": "london",
+        "name": "London",
+        "nation_code": "ENG",
+        "type": "capital",
+        "coords": [
+            640,
+            125
+        ]
+    },
+    {
+        "id": "addis_abeba",
+        "name": "Addis Abeba",
+        "nation_code": "ETH",
+        "type": "capital",
+        "coords": [
+            880,
+            480
+        ]
+    },
+    {
+        "id": "moscow",
+        "name": "Moscow",
+        "nation_code": "SOV",
+        "type": "capital",
+        "coords": [
+            880,
+            100
+        ]
+    },
+    {
+        "id": "tokyo",
+        "name": "Tokyo",
+        "nation_code": "JAP",
+        "type": "capital",
+        "coords": [
+            1330,
+            220
+        ]
+    },
+    {
+        "id": "nanking",
+        "name": "Nanking",
+        "nation_code": "CHI",
+        "type": "capital",
+        "coords": [
+            1160,
+            225
+        ]
+    }
+]

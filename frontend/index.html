@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pax Historia - WW2 Grand Strategy</title>
+    <meta name="description"
+        content="Un gioco di grande strategia ambientato nella Seconda Guerra Mondiale, con AI generativa per eventi e diplomazia.">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <h1 class="loading-title">Pax Historia</h1>
+            <p class="loading-subtitle">Seconda Guerra Mondiale</p>
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Caricamento...</p>
+        </div>
+    </div>
+
+    <!-- Main Menu (shown when no game is active) -->
+    <div id="main-menu" class="main-menu hidden">
+        <div class="menu-background"></div>
+        <div class="menu-content">
+            <h1 class="menu-title">Pax Historia</h1>
+            <p class="menu-subtitle">Seconda Guerra Mondiale • 1935-1945</p>
+
+            <div class="menu-buttons">
+                <button id="btn-new-game" class="menu-btn primary">
+                    <span class="btn-icon">🌍</span>
+                    Nuova Partita
+                </button>
+                <button id="btn-load-game" class="menu-btn">
+                    <span class="btn-icon">📂</span>
+                    Carica Partita
+                </button>
+            </div>
+
+            <div class="menu-footer">
+                <p>Powered by Local AI • LM Studio</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nation Selection Modal -->
+    <div id="nation-select-modal" class="modal hidden">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>Scegli la Tua Nazione</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="nation-filters">
+                    <input type="text" id="nation-search" placeholder="Cerca nazione..." class="search-input">
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">Tutte</button>
+                        <button class="filter-btn" data-filter="major">Grandi Potenze</button>
+                        <button class="filter-btn" data-filter="fascist">Fasciste</button>
+                        <button class="filter-btn" data-filter="democratic">Democratiche</button>
+                        <button class="filter-btn" data-filter="communist">Comuniste</button>
+                    </div>
+                </div>
+                <div id="nation-grid" class="nation-grid">
+                    <!-- Nations will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="start-date-picker">
+                    <label>Data di inizio:</label>
+                    <input type="date" id="start-date" value="1935-12-01" min="1935-01-01" max="1939-09-01">
+                </div>
+                <button id="btn-start-game" class="btn primary" disabled>Inizia Partita</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Game Modal -->
+    <div id="load-game-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Carica Partita</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="saves-list" class="saves-list">
+                    <!-- Saves will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Container -->
+    <div id="game-container" class="game-container hidden">
+        <!-- Header -->
+        <header class="game-header">
+            <div class="header-left">
+                <button id="btn-menu" class="header-btn" title="Menu">
+                    <span class="icon">☰</span>
+                </button>
+                <h1 class="game-title">Pax Historia</h1>
+            </div>
+
+            <nav class="header-nav">
+                <button class="nav-btn" data-panel="actions" title="Azioni">
+                    <span class="icon">⚡</span>
+                    <span class="label">Azioni</span>
+                </button>
+                <button class="nav-btn" data-panel="diplomacy" title="Diplomazia">
+                    <span class="icon">🤝</span>
+                    <span class="label">Diplomazia</span>
+                </button>
+                <button class="nav-btn" data-panel="advisor" title="Consigliere">
+                    <span class="icon">📜</span>
+                    <span class="label">Consigliere</span>
+                </button>
+                <button class="nav-btn" data-panel="events" title="Eventi">
+                    <span class="icon">📰</span>
+                    <span class="label">Eventi</span>
+                </button>
+            </nav>
+
+            <div class="header-right">
+                <div class="date-display">
+                    <button id="btn-prev-turn" class="date-btn" disabled>&lt;</button>
+                    <span id="current-date">1 Dicembre 1935</span>
+                    <button id="btn-advance-time" class="date-btn advance" title="Avanza nel tempo">≫</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Side Menu -->
+        <aside id="side-menu" class="side-menu hidden">
+            <div class="menu-header">
+                <span id="scenario-name">Seconda Guerra Mondiale</span>
+                <span id="player-nation-name">Giocando come: Italia</span>
+            </div>
+            <nav class="menu-nav">
+                <button class="menu-item" id="menu-tutorial">
+                    <span class="icon">📖</span> Tutorial
+                </button>
+                <button class="menu-item" id="menu-events">
+                    <span class="icon">📰</span> Eventi
+                </button>
+                <button class="menu-item" id="menu-map-settings">
+                    <span class="icon">🗺️</span> Impostazioni Mappa
+                </button>
+                <hr>
+                <button class="menu-item" id="menu-save">
+                    <span class="icon">💾</span> Salva Partita
+                </button>
+                <button class="menu-item" id="menu-load">
+                    <span class="icon">📂</span> Carica Partita
+                </button>
+                <button class="menu-item danger" id="menu-quit">
+                    <span class="icon">🚪</span> Esci al Menu
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Map Container -->
+        <main class="map-container">
+            <div id="map"></div>
+
+            <!-- Map Controls -->
+            <div class="map-controls">
+                <button id="btn-zoom-in" class="map-btn" title="Zoom In">+</button>
+                <button id="btn-zoom-out" class="map-btn" title="Zoom Out">−</button>
+                <button id="btn-reset-view" class="map-btn" title="Reset View">🌍</button>
+            </div>
+
+            <!-- Map Search -->
+            <div class="map-search">
+                <input type="text" id="map-search-input" placeholder="Cerca paesi, regioni...">
+                <div id="map-search-results" class="search-results hidden"></div>
+            </div>
+        </main>
+
+        <!-- Panels Container -->
+        <div id="panels-container" class="panels-container">
+            <!-- Actions Panel -->
+            <div id="actions-panel" class="panel hidden">
+                <div class="panel-header">
+                    <h2>Azioni</h2>
+                    <button class="panel-close">&times;</button>
+                </div>
+                <div class="panel-body">
+                    <p class="panel-info">Invia azioni per <span id="actions-nation">Italia</span> per il giorno <span
+                            id="actions-date">1 Dicembre 1935</span>.</p>
+                    <p class="panel-hint">Le tue azioni influenzeranno gli eventi del mondo.</p>
+
+                    <button id="btn-brainstorm" class="btn secondary full-width">
+                        ✨ Aiutami a pianificare azioni
+                    </button>
+
+                    <div id="pending-actions" class="pending-actions">
+                        <!-- Pending actions will appear here -->
+                    </div>
+
+                    <div class="action-input-container">
+                        <div class="search-map-toggle">
+                            <button id="btn-toggle-map-search" class="btn-icon-only">🔍</button>
+                            <span>Cerca sulla mappa</span>
+                        </div>
+                        <div id="actions-map-search" class="mini-search hidden">
+                            <input type="text" placeholder="Cerca paesi, regioni...">
+                            <div class="mini-search-results"></div>
+                        </div>
+                        <textarea id="action-input" placeholder="Inserisci la tua azione..." rows="3"></textarea>
+                        <div class="action-buttons">
+                            <button id="btn-send-action" class="btn primary">
+                                <span class="icon">➤</span> Invia Azione
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advisor Panel -->
+            <div id="advisor-panel" class="panel hidden">
+                <div class="panel-header">
+                    <h2>Consigliere</h2>
+                    <button class="panel-close">&times;</button>
+                </div>
+                <div class="panel-body">
+                    <div id="advisor-messages" class="chat-messages">
+                        <div class="chat-message system">
+                            <p>Chiedi consiglio al tuo consigliere.</p>
+                        </div>
+                    </div>
+
+                    <div class="quick-actions">
+                        <button class="quick-btn" data-action="summary">Riassunto</button>
+                        <button class="quick-btn" data-action="strategic">Consiglio Strategico</button>
+                        <button class="quick-btn" data-action="threats">Minacce</button>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <textarea id="advisor-input" placeholder="Chiedi al tuo consigliere..." rows="2"></textarea>
+                        <button id="btn-ask-advisor" class="btn primary">
+                            <span class="icon">➤</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diplomacy Panel -->
+            <div id="diplomacy-panel" class="panel hidden">
+                <div class="panel-header">
+                    <h2>Chat Diplomatiche</h2>
+                    <button class="panel-close">&times;</button>
+                </div>
+                <div class="panel-body">
+                    <div id="chats-list" class="chats-list">
+                        <!-- Active chats will appear here -->
+                    </div>
+
+                    <button id="btn-new-chat" class="btn secondary full-width">
+                        <span class="icon">+</span> Nuova Conversazione
+                    </button>
+                </div>
+            </div>
+
+            <!-- Events Panel -->
+            <div id="events-panel" class="panel hidden">
+                <div class="panel-header">
+                    <h2>Eventi</h2>
+                    <button class="panel-close">&times;</button>
+                </div>
+                <div class="panel-body">
+                    <div class="events-filters">
+                        <button class="filter-btn active" data-type="all">Tutti</button>
+                        <button class="filter-btn" data-type="military">Militari</button>
+                        <button class="filter-btn" data-type="political">Politici</button>
+                        <button class="filter-btn" data-type="economic">Economici</button>
+                    </div>
+                    <div id="events-list" class="events-list">
+                        <!-- Events will appear here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diplomatic Chat Modal -->
+            <div id="chat-modal" class="panel chat-panel hidden">
+                <div class="panel-header">
+                    <button class="btn-back">←</button>
+                    <h2 id="chat-title">Chat con Germania</h2>
+                    <button class="panel-close">&times;</button>
+                </div>
+                <div class="panel-body">
+                    <div id="chat-messages" class="chat-messages">
+                        <!-- Chat messages will appear here -->
+                    </div>
+                    <div class="chat-input-container">
+                        <textarea id="chat-input" placeholder="Scrivi un messaggio diplomatico..." rows="2"></textarea>
+                        <button id="btn-send-chat" class="btn primary">
+                            <span class="icon">➤</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Chat Modal -->
+            <div id="new-chat-modal" class="panel hidden">
+                <div class="panel-header">
+                    <button class="btn-back">←</button>
+                    <h2>Nuova Conversazione</h2>
+                    <button class="panel-close">&times;</button>
+                </div>
+                <div class="panel-body">
+                    <p>Seleziona le nazioni con cui vuoi comunicare:</p>
+                    <div class="nations-select">
+                        <p class="selected-count">Nazioni selezionate: <span id="selected-nations-count">0</span></p>
+                        <input type="text" id="nations-search" placeholder="Cerca nazioni..." class="search-input">
+                        <div id="nations-list" class="nations-select-list">
+                            <!-- Nations will be loaded here -->
+                        </div>
+                    </div>
+                    <button id="btn-start-chat" class="btn primary full-width" disabled>
+                        Inizia Chat
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Time Jump Modal -->
+        <div id="time-modal" class="modal hidden">
+            <div class="modal-content compact">
+                <div class="modal-header">
+                    <h2>Avanza nel Tempo</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-info">Da: <span id="time-from-date">1 Dicembre 1935</span></p>
+                    <div class="time-options">
+                        <button class="time-btn" data-jump="1_week">
+                            <span class="time-date" id="time-1week"></span>
+                            <span class="time-label">1 Settimana</span>
+                        </button>
+                        <button class="time-btn" data-jump="1_month">
+                            <span class="time-date" id="time-1month"></span>
+                            <span class="time-label">1 Mese</span>
+                        </button>
+                        <button class="time-btn" data-jump="3_months">
+                            <span class="time-date" id="time-3months"></span>
+                            <span class="time-label">3 Mesi</span>
+                        </button>
+                        <button class="time-btn" data-jump="6_months">
+                            <span class="time-date" id="time-6months"></span>
+                            <span class="time-label">6 Mesi</span>
+                        </button>
+                        <button class="time-btn" data-jump="1_year">
+                            <span class="time-date" id="time-1year"></span>
+                            <span class="time-label">1 Anno</span>
+                        </button>
+                        <button class="time-btn custom" data-jump="custom">
+                            <span class="time-label">Personalizzato</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nation Info Popup (appears on map click) -->
+        <div id="nation-popup" class="nation-popup hidden">
+            <div class="popup-header">
+                <div class="popup-flag" id="popup-flag"></div>
+                <div class="popup-title">
+                    <h3 id="popup-nation-name">Germania</h3>
+                    <span id="popup-nation-type">Reich Tedesco</span>
+                </div>
+                <button class="popup-close">&times;</button>
+            </div>
+            <div class="popup-body">
+                <div class="popup-stats">
+                    <div class="stat">
+                        <span class="stat-label">Leader</span>
+                        <span class="stat-value" id="popup-leader">Adolf Hitler</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Ideologia</span>
+                        <span class="stat-value" id="popup-ideology">Fascista</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Popolazione</span>
+                        <span class="stat-value" id="popup-population">67.000.000</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Forza Militare</span>
+                        <span class="stat-value" id="popup-military">85/100</span>
+                    </div>
+                </div>
+                <div class="popup-actions">
+                    <button class="btn secondary" id="nation-popup-btn-chat">💬 Apri Chat</button>
+                    <button class="btn secondary" id="nation-popup-btn-info">📊 Dettagli</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Region Info Popup (appears on map click) -->
+        <div id="region-popup" class="region-popup hidden">
+            <div class="popup-header">
+                <div class="popup-flag-container">
+                    <div class="popup-flag" id="popup-region-flag"></div>
+                </div>
+                <div class="popup-title">
+                    <h3 id="popup-region-name">Venetia</h3>
+                    <span id="popup-region-nation">Italy</span>
+                </div>
+                <button class="popup-close">&times;</button>
+            </div>
+            <div class="popup-body">
+                <!-- Related Events Section -->
+                <div class="popup-section">
+                    <div class="section-header">
+                        <h4>Related Events</h4>
+                        <span class="section-count">0 shown</span>
+                    </div>
+                    <div class="section-search">
+                        <input type="text" placeholder="Search events..." class="mini-search-input">
+                        <button class="filter-icon">🔍</button>
+                    </div>
+                    <p class="empty-msg">No events found for this region.</p>
+                </div>
+
+                <!-- Details Section -->
+                <div class="popup-section">
+                    <h4>Details</h4>
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Type</span>
+                            <span class="detail-value" id="popup-region-type">Coastal</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Bordering Regions</span>
+                            <div class="bordering-list" id="popup-bordering-regions">
+                                <!-- Will be populated dynamically -->
+                                <span class="border-tag">Trentino</span>
+                                <span class="border-tag">Mediterranean Sea</span>
+                                <span class="border-tag">Lombardy</span>
+                                <span class="border-tag">Emilia Romagna</span>
+                                <span class="border-tag">Istria</span>
+                                <span class="border-tag">Austria</span>
+                                <span class="border-tag">Slovenia</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Units Section (Old Stats) -->
+                <div class="popup-section hidden">
+                    <div class="popup-stats">
+                        <div class="stat">
+                            <span class="stat-label">Capacità</span>
+                            <span class="stat-value" id="popup-region-capacity">15</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Infrastruttura</span>
+                            <span class="stat-value" id="popup-region-infra">5/10</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="popup-unit-list" class="popup-unit-list">
+                </div>
+
+                <div class="popup-footer-actions">
+                    <button class="btn secondary" id="region-popup-btn-advisor">Advisor Report</button>
+                    <button class="btn info" id="region-popup-btn-info">Info Stato</button>
+                    <button class="btn primary" id="region-popup-btn-defend">Defend</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/panels/actions-panel.js"></script>
+    <script src="js/panels/advisor-panel.js"></script>
+    <script src="js/panels/diplomacy-panel.js"></script>
+    <script src="js/panels/events-panel.js"></script>
+    <script src="js/panels/timeline-panel.js"></script>
+    <script src="js/regions.js"></script>
+    <script src="js/units.js"></script>
+    <script src="js/cities.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
